@@ -1,37 +1,46 @@
-name: Build
+name: Build Android APK
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
-  build-android:
-    name: Build for Android
+  build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4  # Updated to v3
+    - name: Checkout repository
+      uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4  # Updated to v4
-        with:
-          python-version: '3.10'
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.10
 
-      - name: Install dependencies
-        run: |
-          sudo apt update
-          sudo apt install -y zip unzip openjdk-17-jdk
-          pip install --upgrade pip
-          pip install buildozer cython
+    - name: Install Buildozer dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y \
+          libzip-dev zlib1g-dev \
+          openjdk-11-jdk \
+          python3-pip \
+          unzip
 
-      - name: Build with Buildozer
-        uses: ArtemSBulgakov/buildozer-action@v1  # Keep this action as is
-        id: buildozer
-        with:
-          workdir: .  # assuming the root folder, change if in a subfolder
-          buildozer_version: stable
+    - name: Install Buildozer
+      run: |
+        pip install --upgrade pip
+        pip install buildozer cython
 
-      - name: Upload APK artifacts
-        uses: actions/upload-artifact@v4  # Updated to v3
-        with:
-          name: kanji-vocab-apk
-          path: ${{ steps.buildozer.outputs.filename }}
+    - name: Run Buildozer
+      uses: frostming/buildozer-action@v1
+      with:
+        command: android debug
+
+    - name: Upload APK
+      uses: actions/upload-artifact@v3
+      with:
+        name: app-debug.apk
+        path: bin/*.apk
