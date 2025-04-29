@@ -15,47 +15,58 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Get Date
+        id: get-date
+        run: echo "date=$(date -u '+%Y%m%d')" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Buildozer global directory
+        uses: actions/cache@v4
+        with:
+          path: .buildozer_global
+          key: buildozer-global-${{ hashFiles('**/buildozer.spec') }}
+
+      - name: Cache Buildozer local directory
+        uses: actions/cache@v4
+        with:
+          path: .buildozer
+          key: ${{ runner.os }}-${{ steps.get-date.outputs.date }}-${{ hashFiles('**/buildozer.spec') }}
+
       - name: Install system dependencies
         run: |
           sudo apt update
           sudo apt-get install -y \
-            build-essential git ffmpeg \
+            build-essential git ffmpeg zip unzip \
+            autoconf automake libtool libtool-bin \
             libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
             libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev \
             libunwind-dev zlib1g-dev libsqlite3-dev sqlite3 bzip2 libbz2-dev \
             openssl libgdbm-dev libgdbm-compat-dev liblzma-dev libreadline-dev \
             uuid-dev libgstreamer1.0 gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
-            zip unzip autoconf libtool pkg-config libncurses5-dev libncursesw5-dev \
-            libtinfo6 cmake libffi-dev libssl-dev automake
+            pkg-config libncurses5-dev libncursesw5-dev libtinfo6 cmake libffi-dev libssl-dev \
+            automake
 
-      - name: Set up Java 17
+      - name: Setup Java 17 for Gradle
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Set up Python
+      - name: Setup Python
         uses: actions/setup-python@v2
         with:
           python-version: '3.8'
 
-      - name: Install Python dependencies
+      - name: Install pip dependencies
         run: |
           pip install --upgrade pip
           pip install buildozer cython==0.29.33
 
-      - name: Find and build all buildozer.spec files
+      - name: Build all Buildozer projects
         run: |
-          find . -name "buildozer.spec" | while read specfile; do
-            specdir=$(dirname "$specfile")
-            echo "Building in directory: $specdir"
-            cd "$specdir"
-            yes | buildozer -v android debug || exit 1
-            cd -
-          done
+          find . -name "buildozer.spec" -execdir bash -c "echo 'Building in:' \$(pwd); yes | buildozer -v android debug" \;
 
       - name: Upload APK artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: all-apks
+          name: package
           path: '**/bin/*.apk'
