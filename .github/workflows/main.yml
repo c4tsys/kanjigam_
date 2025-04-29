@@ -1,25 +1,37 @@
 name: Build
+
 on: [push, pull_request]
 
 jobs:
-  # Build job. Builds app for Android with Buildozer
   build-android:
     name: Build for Android
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v3  # Updated to v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4  # Updated to v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y zip unzip openjdk-17-jdk
+          pip install --upgrade pip
+          pip install buildozer cython
 
       - name: Build with Buildozer
-        uses: ArtemSBulgakov/buildozer-action@v1
+        uses: ArtemSBulgakov/buildozer-action@v1  # Keep this action as is
         id: buildozer
         with:
-          workdir: test_app
+          workdir: .  # assuming the root folder, change if in a subfolder
           buildozer_version: stable
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v2
+      - name: Upload APK artifacts
+        uses: actions/upload-artifact@v3  # Updated to v3
         with:
-          name: package
+          name: kanji-vocab-apk
           path: ${{ steps.buildozer.outputs.filename }}
