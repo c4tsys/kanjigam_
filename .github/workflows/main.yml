@@ -31,7 +31,7 @@ jobs:
           buildozer_version: stable
 
       - name: Upload APK
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v2
         with:
           name: kanji-vocab-apk
           path: ${{ steps.buildozer.outputs.filename }}
